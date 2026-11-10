@@ -1,0 +1,10 @@
+[build]
+minify = false
+target = "bun"
+
+[test]
+root = "tests"
+preload = []
+
+[npm]
+# Bun npm compatibility settings
