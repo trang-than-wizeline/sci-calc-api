@@ -1,0 +1,427 @@
+openapi: 3.0.0
+info:
+  title: Scientific Calculator API
+  version: 1.0.0
+  description: A comprehensive Scientific Calculator API with 50+ mathematical operations
+  contact:
+    name: API Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.example.com/api
+    description: Production server
+
+tags:
+  - name: Health
+    description: API health and status endpoints
+  - name: Calculator
+    description: Calculation operations
+  - name: History
+    description: Calculation history management
+
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: Get API information
+      description: Returns general information about the API and available endpoints
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  description:
+                    type: string
+                  endpoints:
+                    type: object
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Check API health
+      description: Returns the health status of the API
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /status:
+    get:
+      tags:
+        - Health
+      summary: Get API status
+      description: Returns detailed status information including uptime and available features
+      responses:
+        '200':
+          description: API status information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /calculate:
+    post:
+      tags:
+        - Calculator
+      summary: Perform a calculation
+      description: Execute a single mathematical calculation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculationRequest'
+      responses:
+        '200':
+          description: Calculation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalculationResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /batch:
+    post:
+      tags:
+        - Calculator
+      summary: Perform batch calculations
+      description: Execute multiple calculations in a single request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchCalculationRequest'
+      responses:
+        '200':
+          description: Batch calculations completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchCalculationResponse'
+        '400':
+          description: Invalid batch request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /operations:
+    get:
+      tags:
+        - Calculator
+      summary: List available operations
+      description: Returns a list of all supported mathematical operations
+      responses:
+        '200':
+          description: List of operations
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    operands:
+                      type: integer
+                    category:
+                      type: string
+
+  /history:
+    get:
+      tags:
+        - History
+      summary: Get calculation history
+      description: Retrieve paginated calculation history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: History retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
+    delete:
+      tags:
+        - History
+      summary: Clear all history
+      description: Delete all calculation history
+      responses:
+        '200':
+          description: History cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /history/{id}:
+    delete:
+      tags:
+        - History
+      summary: Delete history entry
+      description: Delete a specific calculation history entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Entry deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /history/stats:
+    get:
+      tags:
+        - History
+      summary: Get history statistics
+      description: Retrieve statistics about calculation history
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCalculations:
+                    type: integer
+                  operationCounts:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  averageOperands:
+                    type: number
+
+  /history/operation/{operation}:
+    get:
+      tags:
+        - History
+      summary: Get history for specific operation
+      description: Retrieve calculation history for a specific operation
+      parameters:
+        - name: operation
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: History retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
+
+components:
+  schemas:
+    CalculationRequest:
+      type: object
+      required:
+        - operation
+        - operands
+      properties:
+        operation:
+          type: string
+          description: Name of the mathematical operation
+          example: add
+        operands:
+          type: array
+          items:
+            type: number
+          description: Operands for the operation
+          example: [2, 3]
+        precision:
+          type: integer
+          minimum: 0
+          maximum: 28
+          default: 10
+          description: Decimal precision for results
+        angleUnit:
+          type: string
+          enum:
+            - degrees
+            - radians
+          default: radians
+          description: Unit for trigonometric operations
+
+    CalculationResponse:
+      type: object
+      properties:
+        operation:
+          type: string
+        operands:
+          type: array
+          items:
+            type: number
+        result:
+          type: number
+        precision:
+          type: integer
+        angleUnit:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        executionTime:
+          type: number
+          description: Execution time in milliseconds
+
+    BatchCalculationRequest:
+      type: object
+      required:
+        - calculations
+      properties:
+        calculations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculationRequest'
+          maxItems: 100
+
+    BatchCalculationResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculationResponse'
+        totalExecutionTime:
+          type: number
+        successCount:
+          type: integer
+        failureCount:
+          type: integer
+
+    HistoryResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalculationHistory'
+
+    CalculationHistory:
+      type: object
+      properties:
+        id:
+          type: string
+        operation:
+          type: string
+        operands:
+          type: array
+          items:
+            type: number
+        result:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        precision:
+          type: integer
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+        uptime:
+          type: number
+          description: Uptime in seconds
+        timestamp:
+          type: string
+          format: date-time
+
+    StatusResponse:
+      type: object
+      properties:
+        version:
+          type: string
+        status:
+          type: string
+          enum:
+            - operational
+            - maintenance
+        uptime:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        features:
+          type: object
+          properties:
+            arithmetic:
+              type: boolean
+            trigonometric:
+              type: boolean
+            statistical:
+              type: boolean
+            scientific:
+              type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
